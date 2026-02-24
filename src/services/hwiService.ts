@@ -126,7 +126,12 @@ const hwiService = {
   ): Promise<void> => {
     const eventData =
       currentDeviceType === "onekey"
-        ? await onekeyService.registerMultisig()
+        ? await onekeyService.registerMultisig(
+            descriptor,
+            policy,
+            walletName,
+            expectedAddress,
+          )
         : await invoke<void>("hwi_register_multisig", {
             descriptor,
             policy,
@@ -147,7 +152,14 @@ const hwiService = {
   ): Promise<void> => {
     const eventData =
       currentDeviceType === "onekey"
-        ? await onekeyService.verifyAddress()
+        ? await onekeyService.verifyAddress(
+            descriptor,
+            policy,
+            index,
+            walletName,
+            hmac,
+            expectedAddress,
+          )
         : await invoke<void>("hwi_verify_address", {
             descriptor,
             policy,

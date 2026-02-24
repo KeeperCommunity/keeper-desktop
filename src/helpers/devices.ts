@@ -132,12 +132,17 @@ const deviceContent: Record<HWIDeviceType, DeviceContent> = {
         ],
       },
       registerMultisig: {
-        text: "Registration via OneKey desktop channel is currently not supported.",
-        list: [],
+        text: "Please approve the registration of the multisig on the connected OneKey device.",
+        list: [
+          "Make sure to verify the public keys and multisig details shown on the OneKey screen match the expected public keys of your cosigners and multisig details.",
+        ],
       },
       verifyAddress: {
-        text: "Address verification via OneKey desktop channel is currently not supported.",
-        list: [],
+        text: "Clicking below will display the address on your OneKey device, make sure to read it carefully and verify that it matches the address on your Keeper mobile app.",
+        list: [
+          "Only use the address from Keeper mobile app if it matches the address displayed on your OneKey.",
+          "In case the address on your OneKey is different than the address on the Keeper mobile app please contact support immediately.",
+        ],
       },
     },
   },
