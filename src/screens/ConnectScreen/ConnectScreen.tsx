@@ -155,6 +155,10 @@ const ConnectScreen = () => {
             }
             break;
           case "REGISTER_MULTISIG":
+            if (data.signerType?.toLowerCase() === "onekey") {
+              handleError("Register multisig is not supported on OneKey");
+              return;
+            }
             setActionType("registerMultisig");
             if (data.descriptorString) {
               setDescriptor(data.descriptorString.replace(/\*\*/g, "0/0"));

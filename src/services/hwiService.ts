@@ -124,20 +124,16 @@ const hwiService = {
     walletName: string | null,
     expectedAddress: string,
   ): Promise<void> => {
-    const eventData =
-      currentDeviceType === "onekey"
-        ? await onekeyService.registerMultisig(
-            descriptor,
-            policy,
-            walletName,
-            expectedAddress,
-          )
-        : await invoke<void>("hwi_register_multisig", {
-            descriptor,
-            policy,
-            walletName,
-            expectedAddress,
-          });
+    if (currentDeviceType === "onekey") {
+      throw new Error("Operation not supported on OneKey");
+    }
+
+    const eventData = await invoke<void>("hwi_register_multisig", {
+      descriptor,
+      policy,
+      walletName,
+      expectedAddress,
+    });
 
     await emitToChannel(eventData);
   },

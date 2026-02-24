@@ -132,10 +132,8 @@ const deviceContent: Record<HWIDeviceType, DeviceContent> = {
         ],
       },
       registerMultisig: {
-        text: "Please approve the registration of the multisig on the connected OneKey device.",
-        list: [
-          "Make sure to verify the public keys and multisig details shown on the OneKey screen match the expected public keys of your cosigners and multisig details.",
-        ],
+        text: "Operation not supported on OneKey",
+        list: [],
       },
       verifyAddress: {
         text: "Clicking below will display the address on your OneKey device, make sure to read it carefully and verify that it matches the address on your Keeper mobile app.",

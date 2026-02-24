@@ -659,29 +659,6 @@ const showAddressOnDevice = async ({
   return addressPayload.address;
 };
 
-const registerMultisig = async (
-  descriptor: string | null,
-  policy: string | null,
-  _walletName: string | null,
-  expectedAddress: string,
-) => {
-  const script = descriptor || policy;
-  if (!script) {
-    throw new Error("Either descriptor or policy must be provided");
-  }
-
-  const address = await showAddressOnDevice({
-    script,
-    index: 0,
-    expectedAddress,
-  });
-
-  return buildChannelEventData("REGISTER_MULTISIG", {
-    address,
-    hmac: null,
-  });
-};
-
 const verifyAddress = async (
   descriptor: string | null,
   policy: string | null,
@@ -713,7 +690,6 @@ const onekeyService = {
   shareXpubs,
   performHealthCheck,
   signTx,
-  registerMultisig,
   verifyAddress,
   getCurrentNetwork,
 };
