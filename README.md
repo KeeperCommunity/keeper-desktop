@@ -63,6 +63,28 @@ You can adjust the log level by changing `info` to `debug`, `warn`, or `error` a
 
 Log messages will appear in the terminal where you run the command.
 
+## Hardware Integration Notes
+
+Keeper Desktop currently uses two hardware integration paths:
+
+1. **Rust HWI sidecar path** (Trezor / Ledger / BitBox02 / etc.)
+   - Routed through Tauri commands in `src-tauri/src/main.rs` (`hwi_*` commands).
+   - Backed by the `hwi` sidecar binary configured in `src-tauri/tauri.conf.json`.
+2. **OneKey SDK path** (OneKey only)
+   - Routed through `src/services/onekeyService.ts`.
+   - Uses `@onekeyfe/hd-common-connect-sdk` with WebUSB.
+
+### Why OneKey is not on the HWI sidecar path yet
+
+Even though HWI supports common `--device-type` arguments, the current bundled sidecar path does not provide a native OneKey hardware implementation in this repository's Rust/HWI flow.  
+Because of that, OneKey is integrated through its official SDK path for reliable device discovery, xpub sharing, signing, and address verification.
+
+### Current OneKey capability scope
+
+- Supported: connect, share xpubs, health check, sign transaction, verify address
+- Not supported: register multisig
+- Not supported (for now): complex miniscript policy address verification (timelock / nested thresh)
+
 ## Code Quality and CI
 
 We use several tools to maintain code quality and consistency:
