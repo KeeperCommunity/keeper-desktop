@@ -104,6 +104,19 @@ fn emit_to_channel(state: State<'_, AppState>, event_data: Value) -> Result<(), 
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn emit_to_channel_with_network(
+    state: State<'_, AppState>,
+    event_data: Value,
+    network: String,
+) -> Result<(), String> {
+    let state = state.try_lock().map_err(|e| e.to_string())?;
+    state
+        .channel
+        .emit("CHANNEL_MESSAGE", event_data, false, Some(&network))
+        .map_err(|e| e.to_string())
+}
+
 // ==================== HWI Commands ====================
 
 #[tauri::command]
@@ -535,6 +548,7 @@ fn main() {
             hwi_register_multisig,
             hwi_verify_address,
             emit_to_channel,
+            emit_to_channel_with_network,
             hwi_send_pin,
             hwi_prompt_pin,
             async_hwi_enumerate,

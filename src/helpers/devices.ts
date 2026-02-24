@@ -1,11 +1,13 @@
 import bitboxIcon from "../assets/hww/icons/bitbox.svg";
 import trezorIcon from "../assets/hww/icons/trezor.svg";
 import ledgerIcon from "../assets/hww/icons/ledger.svg";
+import onekeyIcon from "../assets/hww/icons/onekey.svg";
 import coldcardIcon from "../assets/hww/icons/coldcard.svg";
 import jadeIcon from "../assets/hww/icons/jade.svg";
 import ledgerIconModal from "../assets/hww/icons-modal/ledger.svg";
 import trezorIconModal from "../assets/hww/icons-modal/trezor.svg";
 import bitboxIconModal from "../assets/hww/icons-modal/bitbox.svg";
+import onekeyIconModal from "../assets/hww/icons-modal/onekey.svg";
 import coldcardIconModal from "../assets/hww/icons-modal/coldcard.svg";
 import jadeIconModal from "../assets/hww/icons-modal/jade.svg";
 
@@ -26,6 +28,10 @@ const HWI_DEVICES = {
   ledger: {
     icon: ledgerIcon,
     name: "Ledger",
+  },
+  onekey: {
+    icon: onekeyIcon,
+    name: "OneKey",
   },
   trezor: {
     icon: trezorIcon,
@@ -98,6 +104,40 @@ const deviceContent: Record<HWIDeviceType, DeviceContent> = {
           "Only use the address from Keeper mobile app if it matches the address displayed on your Ledger.",
           "In case the address on your Ledger is different than the address on the Keeper mobile app please contact support immediately.",
         ],
+      },
+    },
+  },
+  onekey: {
+    icon: onekeyIconModal,
+    content: {
+      connect: {
+        text: "Your mobile app is trying to connect to your OneKey. Please connect your OneKey to your computer via USB, unlock it, and open the Bitcoin app on the device.",
+        list: [],
+      },
+      shareXpubs: {
+        text: "Keep your OneKey connected to the computer until setup is completed.",
+        list: [],
+      },
+      healthCheck: {
+        text: "Your Mobile app is trying to perform a health check. Keep your OneKey connected to the computer until the operation is completed.",
+        list: [
+          "Health check ensures the device holds the keys registered in the mobile app",
+        ],
+      },
+      signTx: {
+        text: "Please sign the transaction by approving it on your OneKey.",
+        list: [
+          "Make sure to verify the address and amount shown on your OneKey screen.",
+          "Only approve the request if the OneKey screen matches the expected details in Keeper.",
+        ],
+      },
+      registerMultisig: {
+        text: "Registration via OneKey desktop channel is currently not supported.",
+        list: [],
+      },
+      verifyAddress: {
+        text: "Address verification via OneKey desktop channel is currently not supported.",
+        list: [],
       },
     },
   },
