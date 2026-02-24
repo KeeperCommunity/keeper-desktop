@@ -62,7 +62,7 @@ interface HWIDevice {
 
 interface DeviceContent {
   icon: string;
-  content: Record<HWI_ACTION, { text: string; list: string[] }>;
+  content: Partial<Record<HWI_ACTION, { text: string; list: string[] }>>;
 }
 
 type HWIDeviceType = keyof typeof HWI_DEVICES;
@@ -130,10 +130,6 @@ const deviceContent: Record<HWIDeviceType, DeviceContent> = {
           "Make sure to verify the address and amount shown on your OneKey screen.",
           "Only approve the request if the OneKey screen matches the expected details in Keeper.",
         ],
-      },
-      registerMultisig: {
-        text: "Operation not supported on OneKey",
-        list: [],
       },
       verifyAddress: {
         text: "Clicking below will display the address on your OneKey device, make sure to read it carefully and verify that it matches the address on your Keeper mobile app.",
