@@ -170,13 +170,20 @@ const parseDescriptorKeys = (script: string): DescriptorKeyOrigin[] => {
 
   for (const match of matches) {
     const fingerprint = match[1].toUpperCase();
-    const basePath = match[2];
+    const rawBasePath = match[2];
     const xpub = match[3];
     const suffixRaw = match[4] || "";
     const suffixSegments = suffixRaw
       .split("/")
       .map((segment) => segment.trim())
       .filter(Boolean);
+
+    const normalizedBasePathSegments = rawBasePath
+      .split("/")
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .map((segment) => parsePathSegment(segment).display);
+    const basePath = `/${normalizedBasePathSegments.join("/")}`;
 
     const dedupeKey = `${fingerprint}:${basePath}:${xpub}:${suffixSegments.join("/")}`;
     if (seen.has(dedupeKey)) {
