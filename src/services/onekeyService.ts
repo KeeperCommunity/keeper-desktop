@@ -75,6 +75,9 @@ const NETWORK_TO_COIN = {
 
 const KEY_ORIGIN_REGEX =
   /\[([A-Fa-f0-9]{8})(\/[0-9hH'/]+)\]([1-9A-HJ-NP-Za-km-z]+)((?:\/(?:<\d+;\d+>|\*|\d+['hH]?))*)/g;
+const TOP_LEVEL_MULTI_REGEX = /^wsh\((?:sortedmulti|multi)\((\d+),.+\)\)$/i;
+const SIMPLE_THRESH_REGEX =
+  /^wsh\(thresh\((\d+),(pk\([^()]+\))(,pk\([^()]+\))*\)\)$/i;
 
 let initialized = false;
 let activeNetwork: OneKeyNetwork = "bitcoin";
@@ -203,19 +206,12 @@ const parseDescriptorKeys = (script: string): DescriptorKeyOrigin[] => {
 };
 
 const getMultisigThreshold = (script: string): number | null => {
-  const sortedMultiMatch = script.match(/(?:^|[,(])sortedmulti\((\d+),/i);
-  if (sortedMultiMatch) {
-    return Number.parseInt(sortedMultiMatch[1], 10);
+  const topLevelMultiMatch = script.match(TOP_LEVEL_MULTI_REGEX);
+  if (topLevelMultiMatch) {
+    return Number.parseInt(topLevelMultiMatch[1], 10);
   }
 
-  const multiMatch = script.match(/(?:^|[,(])multi\((\d+),/i);
-  if (multiMatch) {
-    return Number.parseInt(multiMatch[1], 10);
-  }
-
-  const simpleThreshMatch = script.match(
-    /^wsh\(thresh\((\d+),(pk\([^()]+\))(,pk\([^()]+\))*\)\)$/i,
-  );
+  const simpleThreshMatch = script.match(SIMPLE_THRESH_REGEX);
   if (simpleThreshMatch) {
     return Number.parseInt(simpleThreshMatch[1], 10);
   }
@@ -225,8 +221,15 @@ const getMultisigThreshold = (script: string): number | null => {
 
 const isComplexMiniscript = (script: string) => {
   const indicators = [
+    "thresh(",
     "after(",
+    "and_v(",
     "and_",
+    "andor(",
+    "or_b(",
+    "or_c(",
+    "or_d(",
+    "or_i(",
     "or_",
     "older(",
     "sha256(",
