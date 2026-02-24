@@ -223,6 +223,20 @@ const getMultisigThreshold = (script: string): number | null => {
   return null;
 };
 
+const isComplexMiniscript = (script: string) => {
+  const indicators = [
+    "after(",
+    "and_",
+    "or_",
+    "older(",
+    "sha256(",
+    "hash256(",
+    "ripemd160(",
+    "hash160(",
+  ];
+  return indicators.some((indicator) => script.includes(indicator));
+};
+
 const detectScriptType = (
   script: string,
 ): {
@@ -251,6 +265,12 @@ const detectScriptType = (
 
   if (script.startsWith("pkh(")) {
     return { scriptType: "SPENDADDRESS", multisigThreshold: null };
+  }
+
+  if (isComplexMiniscript(script)) {
+    throw new Error(
+      "OneKey desktop channel does not yet support timelock or nested miniscript policies",
+    );
   }
 
   throw new Error("Unsupported descriptor/policy for OneKey address display");
