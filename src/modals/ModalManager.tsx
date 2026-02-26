@@ -4,6 +4,7 @@ import {
   DeviceNotFoundModal,
   MultipleDevicesModal,
   ErrorModal,
+  OneKeyPinModal,
   TrezorPinModal,
 } from "./index";
 import {
@@ -30,6 +31,7 @@ interface ModalsManagerProps {
   hmac: string | null;
   expectedAddress: string | null;
   pairingCode: string | null;
+  currentDevice: HWIDevice | null;
   errorMessage: string;
   handleConnectResult: (devices: HWIDevice[]) => Promise<void>;
   handleActionSuccess: () => void;
@@ -54,6 +56,7 @@ const ModalsManager = ({
   hmac,
   expectedAddress,
   pairingCode,
+  currentDevice,
   errorMessage,
   handleConnectResult,
   handleActionSuccess,
@@ -125,7 +128,19 @@ const ModalsManager = ({
       />
       <TrezorPinModal
         isOpen={openModal === "pin"}
+        deviceType={deviceType as HWIDeviceType}
         network={network}
+        onClose={closeModalHandler}
+        onSuccess={() => {
+          openModalHandler("deviceActionSuccess");
+        }}
+      />
+
+      <OneKeyPinModal
+        isOpen={openModal === "onekeyPin"}
+        deviceType={deviceType as HWIDeviceType}
+        network={network}
+        model={currentDevice?.model ?? null}
         onClose={closeModalHandler}
         onSuccess={() => {
           openModalHandler("deviceActionSuccess");

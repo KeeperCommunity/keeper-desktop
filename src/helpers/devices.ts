@@ -67,6 +67,49 @@ interface DeviceContent {
 
 type HWIDeviceType = keyof typeof HWI_DEVICES;
 
+type PinInteractionType = "host" | "device";
+
+const ONEKEY_HOST_PIN_MODELS = new Set([
+  "classic",
+  "classic1s",
+  "classicpure",
+  "onekey1",
+  "onekeyclassic",
+  "onekeyclassic1s",
+  "onekeyclassicpure",
+]);
+
+const ONEKEY_DEVICE_PIN_MODELS = new Set([
+  "touch",
+  "pro",
+  "t",
+  "onekeyt",
+  "onekeytouch",
+  "onekeypro",
+]);
+
+const normalizeDeviceModel = (model: string | null | undefined) =>
+  (model ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const getPinInteractionType = (
+  deviceType: HWIDeviceType,
+  model: string | null | undefined,
+): PinInteractionType => {
+  if (deviceType !== "onekey") {
+    return "host";
+  }
+
+  const normalizedModel = normalizeDeviceModel(model);
+  if (ONEKEY_DEVICE_PIN_MODELS.has(normalizedModel)) {
+    return "device";
+  }
+  if (ONEKEY_HOST_PIN_MODELS.has(normalizedModel)) {
+    return "host";
+  }
+
+  return "host";
+};
+
 const deviceContent: Record<HWIDeviceType, DeviceContent> = {
   ledger: {
     icon: ledgerIconModal,
@@ -298,7 +341,9 @@ export {
   HWI_DEVICES,
   HWI_ACTIONS,
   deviceContent,
+  getPinInteractionType,
   type HWI_ACTION,
+  type PinInteractionType,
   type HWIDeviceType,
   type HWIDevice,
   type NetworkType,

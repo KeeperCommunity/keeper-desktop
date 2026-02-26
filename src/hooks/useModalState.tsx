@@ -7,6 +7,7 @@ export type ModalType =
   | "multipleDevices"
   | "error"
   | "pin"
+  | "onekeyPin"
   | null;
 
 const useModalState = () => {
