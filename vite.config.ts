@@ -7,14 +7,6 @@ export default defineConfig(async () => ({
   define: {
     global: "globalThis",
   },
-  resolve: {
-    alias: {
-      buffer: "buffer",
-    },
-  },
-  optimizeDeps: {
-    include: ["buffer"],
-  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

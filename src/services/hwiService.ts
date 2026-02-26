@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { HWIDevice, HWIDeviceType } from "../helpers/devices";
-import onekeyService from "./onekeyService";
 
 interface Result<T> {
   Ok: T;
@@ -19,13 +18,6 @@ const emptyTrezorDevice: HWIDevice = {
 let currentDeviceType: string | null = null;
 
 const emitToChannel = async (eventData: unknown) => {
-  if (currentDeviceType === "onekey") {
-    await invoke<void>("emit_to_channel_with_network", {
-      eventData,
-      network: onekeyService.getCurrentNetwork(),
-    });
-    return;
-  }
   await invoke<void>("emit_to_channel", { eventData });
 };
 
@@ -34,10 +26,6 @@ const hwiService = {
     deviceType: HWIDeviceType | null = null,
     network: string | null = null,
   ): Promise<HWIDevice[]> => {
-    if (deviceType === "onekey") {
-      return onekeyService.fetchDevices(network);
-    }
-
     if (network === "mainnet") {
       network = "bitcoin";
     }
@@ -70,11 +58,6 @@ const hwiService = {
   ): Promise<void> => {
     currentDeviceType = deviceType;
 
-    if (deviceType === "onekey") {
-      await onekeyService.setHWIClient(fingerprint, network);
-      return;
-    }
-
     if (network === "mainnet") {
       network = "bitcoin";
     }
@@ -82,20 +65,12 @@ const hwiService = {
   },
 
   shareXpubs: async (account: number): Promise<void> => {
-    const eventData =
-      currentDeviceType === "onekey"
-        ? await onekeyService.shareXpubs(account)
-        : await invoke("hwi_get_xpubs", { account });
-
+    const eventData = await invoke("hwi_get_xpubs", { account });
     await emitToChannel(eventData);
   },
 
   performHealthCheck: async (account: number): Promise<void> => {
-    const eventData =
-      currentDeviceType === "onekey"
-        ? await onekeyService.performHealthCheck(account)
-        : await invoke<void>("hwi_healthcheck", { account });
-
+    const eventData = await invoke<void>("hwi_healthcheck", { account });
     await emitToChannel(eventData);
   },
 
@@ -105,16 +80,12 @@ const hwiService = {
     walletName: string | null,
     hmac: string | null,
   ): Promise<void> => {
-    const eventData =
-      currentDeviceType === "onekey"
-        ? await onekeyService.signTx(psbt)
-        : await invoke<void>("hwi_sign_tx", {
-            psbt,
-            policy,
-            walletName,
-            hmac,
-          });
-
+    const eventData = await invoke<void>("hwi_sign_tx", {
+      psbt,
+      policy,
+      walletName,
+      hmac,
+    });
     await emitToChannel(eventData);
   },
 
@@ -146,39 +117,22 @@ const hwiService = {
     hmac: string | null,
     expectedAddress: string,
   ): Promise<void> => {
-    const eventData =
-      currentDeviceType === "onekey"
-        ? await onekeyService.verifyAddress(
-            descriptor,
-            policy,
-            index,
-            walletName,
-            hmac,
-            expectedAddress,
-          )
-        : await invoke<void>("hwi_verify_address", {
-            descriptor,
-            policy,
-            index,
-            walletName,
-            hmac,
-            expectedAddress,
-          });
-
+    const eventData = await invoke<void>("hwi_verify_address", {
+      descriptor,
+      policy,
+      index,
+      walletName,
+      hmac,
+      expectedAddress,
+    });
     await emitToChannel(eventData);
   },
 
   promptPin: async (): Promise<void> => {
-    if (currentDeviceType === "onekey") {
-      return;
-    }
     await invoke<void>("hwi_prompt_pin");
   },
 
   sendPin: async (pin: string): Promise<void> => {
-    if (currentDeviceType === "onekey") {
-      return;
-    }
     await invoke<void>("hwi_send_pin", { pin });
   },
 };
