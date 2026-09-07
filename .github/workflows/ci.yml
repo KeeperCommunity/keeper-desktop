@@ -31,6 +31,8 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             libudev-dev
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@1.85.1
       - name: Run ESLint
         run: npm run lint
       - name: Check Prettier formatting
