@@ -31,7 +31,7 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             libudev-dev
-      - name: Install Rust stable
+      - name: Install Rust 1.85.1
         uses: dtolnay/rust-toolchain@1.85.1
       - name: Run ESLint
         run: npm run lint
