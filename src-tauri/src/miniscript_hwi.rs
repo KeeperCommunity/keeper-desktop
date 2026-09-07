@@ -25,16 +25,6 @@ pub struct Wallet<'a> {
 
 pub const DEFAULT_FILE_NAME: &str = "bitbox02.json";
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct Settings {
-    pub bitbox: Option<BitboxSettings>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct BitboxSettings {
-    pub noise_config: NoiseConfigData,
-}
-
 pub struct PersistedBitboxNoiseConfig {
     file_path: PathBuf,
 }

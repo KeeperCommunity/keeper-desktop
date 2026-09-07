@@ -1,6 +1,6 @@
 [package]
 name = "keeper-desktop"
-version = "0.2.4"
+version = "0.2.5"
 description = "Bitcoin Keeper Desktop App"
 authors = ["Ben Kaufman"]
 repository = "https://github.com/bithyve/keeper-desktop"
