@@ -16,7 +16,7 @@ use tokio::time::timeout;
 static URL: &str = "https://keeper-channel-dev-8d01fa5233d0.herokuapp.com/";
 
 #[cfg(feature = "release")]
-static URL: &str = "https://keeper-channel.herokuapp.com/";
+static URL: &str = "https://channel.bitcoinkeeper.app/";
 
 #[derive(Error, Debug)]
 pub enum ChannelError {
