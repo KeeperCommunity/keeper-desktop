@@ -4,12 +4,14 @@ import styles from "./TrezorPinModal.module.css";
 import baseStyles from "../BaseModal/BaseModal.module.css";
 import loader from "../../assets/loader.svg";
 import TrezorIcon from "../../assets/hww/icons-modal/trezor.svg";
+import OneKeyIcon from "../../assets/hww/icons-modal/onekey.svg";
 import ErrorIcon from "../../assets/error-popup-icon.svg";
 import hwiService from "../../services/hwiService";
-import { NetworkType } from "../../helpers/devices";
+import { HWIDeviceType, NetworkType } from "../../helpers/devices";
 
 interface TrezorPinModalProps {
   isOpen: boolean;
+  deviceType: HWIDeviceType;
   network: NetworkType | null;
   onClose: () => void;
   onSuccess: () => void;
@@ -17,6 +19,7 @@ interface TrezorPinModalProps {
 
 const TrezorPinModal = ({
   isOpen,
+  deviceType,
   network,
   onClose,
   onSuccess,
@@ -30,6 +33,9 @@ const TrezorPinModal = ({
   };
 
   const handlePinSubmit = async () => {
+    if (!network) {
+      return showError("Network is not set");
+    }
     if (pin.length < 4) {
       return showError("PIN must be at least 4 digits");
     }
@@ -38,13 +44,17 @@ const TrezorPinModal = ({
     try {
       await hwiService.sendPin(pin);
       const devices = await hwiService.fetchDevices(
-        "trezor",
+        deviceType,
         network?.toLowerCase(),
       );
+      const unlockedDevice = devices.find((device) => !device.needs_pin_sent);
+      if (!unlockedDevice) {
+        throw new Error("Device is still locked");
+      }
       await hwiService.setHWIClient(
-        devices[0].fingerprint,
-        "trezor",
-        network!.toLowerCase(),
+        unlockedDevice.fingerprint,
+        deviceType,
+        network.toLowerCase(),
       );
       onSuccess();
     } catch {
@@ -65,16 +75,20 @@ const TrezorPinModal = ({
     return () => clearTimeout(timer);
   }
 
+  const isOneKey = deviceType === "onekey";
+  const icon = isOneKey ? OneKeyIcon : TrezorIcon;
+  const deviceName = isOneKey ? "OneKey" : "Trezor";
+
   const modalContent = {
     image: (
       <img
-        src={TrezorIcon}
-        alt="Trezor"
+        src={icon}
+        alt={deviceName}
         className={`${baseStyles.icon} ${styles.icon}`}
       />
     ),
     title: (
-      <h2 className={`${baseStyles.title} ${styles.title}`}>Enter the pin</h2>
+      <h2 className={`${baseStyles.title} ${styles.title}`}>Enter the PIN</h2>
     ),
     content: (
       <>
@@ -86,7 +100,7 @@ const TrezorPinModal = ({
         </div>
         <div className={styles.textContainer}>
           <p className={`${baseStyles.text} ${styles.text}`}>
-            Follow the keypad layout on your Trezor
+            Follow the keypad layout on your {deviceName}
           </p>
         </div>
         <div className={styles.pinPadContainer}>
@@ -115,7 +129,7 @@ const TrezorPinModal = ({
             className={styles.loadingSpinner}
           />
         ) : (
-          "Enter Pin"
+          "Enter PIN"
         )}
       </button>
     ),

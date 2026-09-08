@@ -72,6 +72,10 @@ export const useDeviceActions = ({
           onActionSuccess();
           break;
         case "registerMultisig":
+          if (deviceType === "onekey") {
+            onError("Register multisig is not supported on OneKey");
+            return;
+          }
           if (!descriptor && !miniscriptPolicy) {
             onError("Descriptor or miniscript policy is required");
             return;

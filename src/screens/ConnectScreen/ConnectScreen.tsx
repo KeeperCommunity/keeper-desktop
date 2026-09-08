@@ -10,6 +10,7 @@ import { listen } from "@tauri-apps/api/event";
 import QRCode from "qrcode.react";
 import useModalState from "../../hooks/useModalState";
 import {
+  getPinInteractionType,
   HWI_ACTION,
   HWIDevice,
   HWIDeviceType,
@@ -57,6 +58,7 @@ const ConnectScreen = () => {
   const [expectedAddress, setExpectedAddress] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [currentDevice, setCurrentDevice] = useState<HWIDevice | null>(null);
 
   // Subscriptions state variables
   const [isSubscriptionsModalOpen, setSubscriptionsModalOpen] = useState(false);
@@ -70,14 +72,22 @@ const ConnectScreen = () => {
       openModalHandler("notFound");
     } else {
       if (deviceType && network) {
+        const device = devices[0];
+        setCurrentDevice(device);
         await hwiService.setHWIClient(
-          devices[0].fingerprint,
+          device.fingerprint,
           deviceType,
           network.toLowerCase(),
         );
-        if (devices[0].needs_pin_sent) {
+        if (device.needs_pin_sent) {
           await hwiService.promptPin();
-          openModalHandler("pin");
+          const pinInteractionType = getPinInteractionType(
+            deviceType,
+            device.model,
+          );
+          openModalHandler(
+            pinInteractionType === "device" ? "onekeyPin" : "pin",
+          );
         } else {
           openModalHandler("deviceActionSuccess");
         }
@@ -155,6 +165,10 @@ const ConnectScreen = () => {
             }
             break;
           case "REGISTER_MULTISIG":
+            if (data.signerType?.toLowerCase() === "onekey") {
+              handleError("Register multisig is not supported on OneKey");
+              return;
+            }
             setActionType("registerMultisig");
             if (data.descriptorString) {
               setDescriptor(data.descriptorString.replace(/\*\*/g, "0/0"));
@@ -329,6 +343,7 @@ const ConnectScreen = () => {
           setCurrentAction={setCurrentAction}
           openModalHandler={openModalHandler}
           pairingCode={pairingCode}
+          currentDevice={currentDevice}
         />
       )}
       <div className={styles.versionTag}>Version {version}</div>

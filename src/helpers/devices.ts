@@ -1,11 +1,13 @@
 import bitboxIcon from "../assets/hww/icons/bitbox.svg";
 import trezorIcon from "../assets/hww/icons/trezor.svg";
 import ledgerIcon from "../assets/hww/icons/ledger.svg";
+import onekeyIcon from "../assets/hww/icons/onekey.svg";
 import coldcardIcon from "../assets/hww/icons/coldcard.svg";
 import jadeIcon from "../assets/hww/icons/jade.svg";
 import ledgerIconModal from "../assets/hww/icons-modal/ledger.svg";
 import trezorIconModal from "../assets/hww/icons-modal/trezor.svg";
 import bitboxIconModal from "../assets/hww/icons-modal/bitbox.svg";
+import onekeyIconModal from "../assets/hww/icons-modal/onekey.svg";
 import coldcardIconModal from "../assets/hww/icons-modal/coldcard.svg";
 import jadeIconModal from "../assets/hww/icons-modal/jade.svg";
 
@@ -26,6 +28,10 @@ const HWI_DEVICES = {
   ledger: {
     icon: ledgerIcon,
     name: "Ledger",
+  },
+  onekey: {
+    icon: onekeyIcon,
+    name: "OneKey",
   },
   trezor: {
     icon: trezorIcon,
@@ -56,10 +62,53 @@ interface HWIDevice {
 
 interface DeviceContent {
   icon: string;
-  content: Record<HWI_ACTION, { text: string; list: string[] }>;
+  content: Partial<Record<HWI_ACTION, { text: string; list: string[] }>>;
 }
 
 type HWIDeviceType = keyof typeof HWI_DEVICES;
+
+type PinInteractionType = "host" | "device";
+
+const ONEKEY_HOST_PIN_MODELS = new Set([
+  "classic",
+  "classic1s",
+  "classicpure",
+  "onekey1",
+  "onekeyclassic",
+  "onekeyclassic1s",
+  "onekeyclassicpure",
+]);
+
+const ONEKEY_DEVICE_PIN_MODELS = new Set([
+  "touch",
+  "pro",
+  "t",
+  "onekeyt",
+  "onekeytouch",
+  "onekeypro",
+]);
+
+const normalizeDeviceModel = (model: string | null | undefined) =>
+  (model ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const getPinInteractionType = (
+  deviceType: HWIDeviceType,
+  model: string | null | undefined,
+): PinInteractionType => {
+  if (deviceType !== "onekey") {
+    return "host";
+  }
+
+  const normalizedModel = normalizeDeviceModel(model);
+  if (ONEKEY_DEVICE_PIN_MODELS.has(normalizedModel)) {
+    return "device";
+  }
+  if (ONEKEY_HOST_PIN_MODELS.has(normalizedModel)) {
+    return "host";
+  }
+
+  return "host";
+};
 
 const deviceContent: Record<HWIDeviceType, DeviceContent> = {
   ledger: {
@@ -97,6 +146,39 @@ const deviceContent: Record<HWIDeviceType, DeviceContent> = {
         list: [
           "Only use the address from Keeper mobile app if it matches the address displayed on your Ledger.",
           "In case the address on your Ledger is different than the address on the Keeper mobile app please contact support immediately.",
+        ],
+      },
+    },
+  },
+  onekey: {
+    icon: onekeyIconModal,
+    content: {
+      connect: {
+        text: "Your mobile app is trying to connect to your OneKey. Please connect your OneKey to your computer via USB, unlock it, and open the Bitcoin app on the device.",
+        list: [],
+      },
+      shareXpubs: {
+        text: "Keep your OneKey connected to the computer until setup is completed.",
+        list: [],
+      },
+      healthCheck: {
+        text: "Your Mobile app is trying to perform a health check. Keep your OneKey connected to the computer until the operation is completed.",
+        list: [
+          "Health check ensures the device holds the keys registered in the mobile app",
+        ],
+      },
+      signTx: {
+        text: "Please sign the transaction by approving it on your OneKey.",
+        list: [
+          "Make sure to verify the address and amount shown on your OneKey screen.",
+          "Only approve the request if the OneKey screen matches the expected details in Keeper.",
+        ],
+      },
+      verifyAddress: {
+        text: "Clicking below will display the address on your OneKey device, make sure to read it carefully and verify that it matches the address on your Keeper mobile app.",
+        list: [
+          "Only use the address from Keeper mobile app if it matches the address displayed on your OneKey.",
+          "In case the address on your OneKey is different than the address on the Keeper mobile app please contact support immediately.",
         ],
       },
     },
@@ -259,7 +341,9 @@ export {
   HWI_DEVICES,
   HWI_ACTIONS,
   deviceContent,
+  getPinInteractionType,
   type HWI_ACTION,
+  type PinInteractionType,
   type HWIDeviceType,
   type HWIDevice,
   type NetworkType,

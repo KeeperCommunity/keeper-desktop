@@ -34,14 +34,26 @@ interface DeviceActionModalProps {
   onError: (error: string) => void;
 }
 
-const actionTitle = (deviceType: HWIDeviceType) => ({
-  connect: `Connect ${HWI_DEVICES[deviceType].name}`,
-  shareXpubs: `Setting up ${HWI_DEVICES[deviceType].name}`,
-  healthCheck: `${HWI_DEVICES[deviceType].name} Health Check`,
-  signTx: "Sign Transaction",
-  registerMultisig: `Register Multisig on ${HWI_DEVICES[deviceType].name}`,
-  verifyAddress: `Verify Address on your ${HWI_DEVICES[deviceType].name}`,
-});
+const getActionTitle = (deviceType: HWIDeviceType, actionType: HWI_ACTION) => {
+  if (actionType === "registerMultisig" && deviceType === "onekey") {
+    return "Unsupported Action";
+  }
+
+  switch (actionType) {
+    case "connect":
+      return `Connect ${HWI_DEVICES[deviceType].name}`;
+    case "shareXpubs":
+      return `Setting up ${HWI_DEVICES[deviceType].name}`;
+    case "healthCheck":
+      return `${HWI_DEVICES[deviceType].name} Health Check`;
+    case "signTx":
+      return "Sign Transaction";
+    case "registerMultisig":
+      return `Register Multisig on ${HWI_DEVICES[deviceType].name}`;
+    case "verifyAddress":
+      return `Verify Address on your ${HWI_DEVICES[deviceType].name}`;
+  }
+};
 
 const DeviceActionModal = ({
   isOpen,
@@ -84,6 +96,10 @@ const DeviceActionModal = ({
   const iconSrc = isVerifyAddress ? verifyAddressIcon : content.icon;
 
   const modalContent = useMemo(() => {
+    const actionContent = content.content[actionType] ?? {
+      text: "Operation not supported on this device",
+      list: [],
+    };
     const iconStyle = isVerifyAddress
       ? { width: "173px", height: "137px", marginBottom: "-20px" }
       : {};
@@ -93,7 +109,7 @@ const DeviceActionModal = ({
       deviceType === "coldcard" &&
       actionType === "registerMultisig"
         ? "Please approve the registration of the wallet on the connected Coldcard device"
-        : content.content[actionType].text;
+        : actionContent.text;
 
     const listContent =
       miniscriptPolicy &&
@@ -102,7 +118,7 @@ const DeviceActionModal = ({
         ? [
             "Make sure to verify the public keys and wallet details shown on the Coldcard screen match the expected public keys of your cosigners and wallet details.",
           ]
-        : content.content[actionType].list;
+        : actionContent.list;
 
     const hasListItems = listContent.length > 0;
 
@@ -123,7 +139,7 @@ const DeviceActionModal = ({
             marginLeft: hasListItems ? "25px" : "0px",
           }}
         >
-          {actionTitle(deviceType)[actionType]}
+          {getActionTitle(deviceType, actionType)}
         </h2>
       ),
       content: (

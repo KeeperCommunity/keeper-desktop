@@ -15,6 +15,12 @@ const emptyTrezorDevice: HWIDevice = {
   fingerprint: null,
 };
 
+let currentDeviceType: string | null = null;
+
+const emitToChannel = async (eventData: unknown) => {
+  await invoke<void>("emit_to_channel", { eventData });
+};
+
 const hwiService = {
   fetchDevices: async (
     deviceType: HWIDeviceType | null = null,
@@ -50,6 +56,8 @@ const hwiService = {
     deviceType: string,
     network: string,
   ): Promise<void> => {
+    currentDeviceType = deviceType;
+
     if (network === "mainnet") {
       network = "bitcoin";
     }
@@ -58,12 +66,12 @@ const hwiService = {
 
   shareXpubs: async (account: number): Promise<void> => {
     const eventData = await invoke("hwi_get_xpubs", { account });
-    await invoke("emit_to_channel", { eventData });
+    await emitToChannel(eventData);
   },
 
   performHealthCheck: async (account: number): Promise<void> => {
     const eventData = await invoke<void>("hwi_healthcheck", { account });
-    await invoke<void>("emit_to_channel", { eventData });
+    await emitToChannel(eventData);
   },
 
   signTx: async (
@@ -78,7 +86,7 @@ const hwiService = {
       walletName,
       hmac,
     });
-    await invoke<void>("emit_to_channel", { eventData });
+    await emitToChannel(eventData);
   },
 
   registerMultisig: async (
@@ -87,13 +95,18 @@ const hwiService = {
     walletName: string | null,
     expectedAddress: string,
   ): Promise<void> => {
+    if (currentDeviceType === "onekey") {
+      throw new Error("Operation not supported on OneKey");
+    }
+
     const eventData = await invoke<void>("hwi_register_multisig", {
       descriptor,
       policy,
       walletName,
       expectedAddress,
     });
-    await invoke<void>("emit_to_channel", { eventData });
+
+    await emitToChannel(eventData);
   },
 
   verifyAddress: async (
@@ -112,7 +125,7 @@ const hwiService = {
       hmac,
       expectedAddress,
     });
-    await invoke<void>("emit_to_channel", { eventData });
+    await emitToChannel(eventData);
   },
 
   promptPin: async (): Promise<void> => {

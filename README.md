@@ -63,6 +63,21 @@ You can adjust the log level by changing `info` to `debug`, `warn`, or `error` a
 
 Log messages will appear in the terminal where you run the command.
 
+## Hardware Integration Notes
+
+Keeper Desktop uses a single hardware integration path:
+
+1. **Rust HWI sidecar path** (Trezor / Ledger / BitBox02 / OneKey / etc.)
+   - Routed through Tauri commands in `src-tauri/src/main.rs` (`hwi_*` commands).
+   - Backed by the `hwi` sidecar binary configured in `src-tauri/tauri.conf.json`.
+   - No WebUSB fallback path in the desktop frontend.
+
+### Current OneKey capability scope
+
+- Supported: connect, share xpubs, health check, sign transaction, verify address
+- Not supported: register multisig
+- Not supported (for now): complex miniscript policy address verification (timelock / nested thresh)
+
 ## Code Quality and CI
 
 We use several tools to maintain code quality and consistency:
