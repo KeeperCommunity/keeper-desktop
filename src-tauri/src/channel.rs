@@ -12,10 +12,6 @@ use tauri::Manager;
 use thiserror::Error;
 use tokio::time::timeout;
 
-#[cfg(not(feature = "release"))]
-static URL: &str = "https://keeper-channel-dev-8d01fa5233d0.herokuapp.com/";
-
-#[cfg(feature = "release")]
 static URL: &str = "https://channel.bitcoinkeeper.app/";
 
 #[derive(Error, Debug)]
