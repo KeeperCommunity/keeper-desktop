@@ -2,7 +2,7 @@
 
 ## Copilot effort
 
-Desktop defaults to **Lite**. Before requesting the first review or marking a draft ready, select the whole PR's effort in GitHub and record its reason in the PR description. A saved PR effort overrides the repository default; verify it when updating an existing PR. GitHub controls the review model; the model selected in ChatGPT or Codex does not select Copilot's model.
+Desktop defaults to **Lite**. Before requesting the first review or marking a draft ready, select the whole PR's effort in GitHub and record its reason in the PR description. A saved PR effort overrides the repository default; verify it when updating an existing PR. [GitHub controls the review model](https://docs.github.com/en/copilot/concepts/agents/code-review); the model selected in ChatGPT or Codex does not select Copilot's model.
 
 - **Lite:** routine UI, styling, noncritical copy, documentation, or isolated changes with understood, low risk.
 - **Balanced:** keys, signing, recovery, backup, authentication, pairing, transactions, wallet migration, security-sensitive copy or dependencies, permissions, complex changes, changes spanning services/repositories, or unclear risk.
