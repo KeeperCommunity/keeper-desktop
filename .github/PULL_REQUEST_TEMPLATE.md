@@ -9,6 +9,8 @@ Describe the problem and resulting behavior.
 
 ## Review
 
+<!-- Repository default: Lite. Classify manually and verify the GitHub effort before requesting the first review or marking a draft ready. -->
+
 Follow `.github/REVIEW_POLICY.md`. Complete the selected effort fields before the first review; update the actual evidence after review.
 
 - Selected Copilot effort (Lite / Balanced) and reason:
