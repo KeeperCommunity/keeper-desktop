@@ -33,6 +33,8 @@ jobs:
             libudev-dev
       - name: Install Rust 1.85.1
         uses: dtolnay/rust-toolchain@1.85.1
+        with:
+          components: clippy, rustfmt
       - name: Run ESLint
         run: npm run lint
       - name: Check Prettier formatting

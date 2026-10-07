@@ -106,6 +106,8 @@ We use several tools to maintain code quality and consistency:
 
 Before submitting a pull request, please ensure that your code passes all linting and formatting checks.
 
+Follow the [pull request review policy](.github/REVIEW_POLICY.md) for Copilot effort, review evidence, and the required independent human approval. Use the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) when opening a PR.
+
 ## License
 
 This project is licensed under the **MIT License.**
