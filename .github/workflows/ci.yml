@@ -43,3 +43,5 @@ jobs:
         run: npm run tauri:format:check
       - name: Run Rust Clippy
         run: mkdir dist && npm run tauri:lint
+      - name: Test channel protocol
+        run: cd src-tauri && cargo test channel::tests --all-features
