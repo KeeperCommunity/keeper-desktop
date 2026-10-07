@@ -34,14 +34,17 @@ jobs:
           python3 - <<'PYQA'
           import json
           from pathlib import Path
-          config = {
-            "package": {"productName": "Keeper Desktop R3 QA", "version": "0.2.6-qa.1"},
-            "tauri": {"bundle": {"identifier": "com.keeper.desktop.r3qa", "macOS": {"signingIdentity": "-"}}}
-          }
+          config = json.loads(Path("src-tauri/tauri.release.conf.json").read_text())
+          config["package"].update(productName="Keeper Desktop R3 QA", version="0.2.6-qa.1")
+          config["tauri"]["bundle"]["identifier"] = "com.keeper.desktop.r3qa"
+          config["tauri"]["bundle"]["macOS"]["signingIdentity"] = "-"
           Path("src-tauri/tauri.qa.conf.json").write_text(json.dumps(config))
+          package = json.loads(Path("package.json").read_text())
+          package["version"] = "0.2.6-qa.1"
+          Path("package.json").write_text(json.dumps(package))
           PYQA
       - name: Build QA application only
-        run: npm run tauri build -- --target aarch64-apple-darwin --bundles app --config src-tauri/tauri.release.conf.json --config src-tauri/tauri.qa.conf.json
+        run: npm run tauri build -- --target aarch64-apple-darwin --bundles app --config src-tauri/tauri.qa.conf.json
       - name: Verify QA metadata and endpoint
         run: |
           python3 - <<'PYQA'
