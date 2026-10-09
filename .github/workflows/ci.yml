@@ -39,6 +39,8 @@ jobs:
         run: npm run lint
       - name: Check Prettier formatting
         run: npm run format:check
+      - name: Test Desktop channel requests
+        run: npm run test:channel
       - name: Check Rust formatting
         run: npm run tauri:format:check
       - name: Run Rust Clippy

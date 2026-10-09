@@ -228,6 +228,11 @@ impl Channel {
             .and_then(|arr| arr.first())
             .ok_or("Failed to parse message")?;
 
+        let room = self.room.as_deref().ok_or("No active channel room")?;
+        if data.get("room").and_then(|value| value.as_str()) != Some(room) {
+            return Err("Message received from inactive room".to_string());
+        }
+
         let request_data = data
             .get("requestData")
             .ok_or("Failed to parse message data")?;
@@ -236,12 +241,9 @@ impl Channel {
             .get("network")
             .ok_or("Failed to parse message network")?;
 
-        let data = if request_data.get("encryptedData").is_some() {
-            self.decrypt_data(request_data)
-                .map_err(|_| "Failed to decrypt message from channel")?
-        } else {
-            request_data.clone()
-        };
+        let data = self
+            .decrypt_data(request_data)
+            .map_err(|_| "Failed to decrypt message from channel")?;
 
         Ok(json!({ "data": data, "network": network }))
     }
@@ -318,19 +320,80 @@ mod tests {
     fn test_channel(key: &str) -> Channel {
         Channel {
             client: None,
-            room: None,
+            room: Some(hex::encode(Sha256::digest(key))),
             encryption_key: Some(key.to_string()),
         }
+    }
+
+    fn request_message(room: &str, request_data: serde_json::Value) -> serde_json::Value {
+        json!([{"room": room, "requestData": request_data, "network": "TESTNET"}])
     }
 
     #[test]
     fn mobile_signing_vector_is_accepted_with_testnet_network() {
         let fixture = fixture();
         let channel = test_channel(fixture["key"].as_str().unwrap());
-        let message =
-            json!([{"requestData": fixture["request"]["ciphertext"], "network": "TESTNET"}]);
+        let message = request_message(
+            channel.room.as_deref().unwrap(),
+            fixture["request"]["ciphertext"].clone(),
+        );
         assert_eq!(
             channel.process_channel_message(&message).unwrap(),
+            json!({"data": fixture["request"]["plaintext"], "network": "TESTNET"})
+        );
+    }
+
+    #[test]
+    fn missing_or_inactive_room_never_reaches_desktop() {
+        let fixture = fixture();
+        let mut channel = test_channel(fixture["key"].as_str().unwrap());
+        let ciphertext = fixture["request"]["ciphertext"].clone();
+        let missing_room = json!([{"requestData": ciphertext.clone(), "network": "TESTNET"}]);
+        assert!(channel.process_channel_message(&missing_room).is_err());
+
+        let old_room = request_message(&"00".repeat(32), ciphertext.clone());
+        assert!(channel.process_channel_message(&old_room).is_err());
+
+        let current_room = request_message(channel.room.as_deref().unwrap(), ciphertext);
+        channel.room = None;
+        assert!(channel.process_channel_message(&current_room).is_err());
+    }
+
+    #[test]
+    fn plaintext_or_incomplete_envelope_is_rejected_in_active_room() {
+        let fixture = fixture();
+        let channel = test_channel(fixture["key"].as_str().unwrap());
+        let room = channel.room.as_deref().unwrap();
+        let plaintext = request_message(room, fixture["request"]["plaintext"].clone());
+        assert!(channel.process_channel_message(&plaintext).is_err());
+
+        let mut incomplete = fixture["request"]["ciphertext"].clone();
+        incomplete.as_object_mut().unwrap().remove("authTag");
+        assert!(channel
+            .process_channel_message(&request_message(room, incomplete))
+            .is_err());
+    }
+
+    #[test]
+    fn rotating_qr_rejects_old_room_and_accepts_new_session() {
+        let fixture = fixture();
+        let mut channel = test_channel(fixture["key"].as_str().unwrap());
+        let old_request = request_message(
+            channel.room.as_deref().unwrap(),
+            fixture["request"]["ciphertext"].clone(),
+        );
+
+        let new_key = "01".repeat(32);
+        channel.room = Some(hex::encode(Sha256::digest(&new_key)));
+        channel.encryption_key = Some(new_key);
+        assert!(channel.process_channel_message(&old_request).is_err());
+
+        let new_ciphertext = channel
+            .encrypt_data(fixture["request"]["plaintext"].clone())
+            .unwrap();
+        let new_request = request_message(channel.room.as_deref().unwrap(), new_ciphertext);
+        assert_eq!(
+            channel.process_channel_message(&new_request).unwrap(),
             json!({"data": fixture["request"]["plaintext"], "network": "TESTNET"})
         );
     }
