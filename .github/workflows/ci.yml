@@ -33,11 +33,17 @@ jobs:
             libudev-dev
       - name: Install Rust 1.85.1
         uses: dtolnay/rust-toolchain@1.85.1
+        with:
+          components: rustfmt, clippy
       - name: Run ESLint
         run: npm run lint
       - name: Check Prettier formatting
         run: npm run format:check
+      - name: Test Desktop channel requests
+        run: npm run test:channel
       - name: Check Rust formatting
         run: npm run tauri:format:check
       - name: Run Rust Clippy
         run: mkdir dist && npm run tauri:lint
+      - name: Test channel protocol
+        run: cd src-tauri && cargo test channel::tests --all-features

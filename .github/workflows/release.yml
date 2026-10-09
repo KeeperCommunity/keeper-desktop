@@ -2,6 +2,11 @@ name: "release"
 
 on:
   workflow_dispatch:
+    inputs:
+      qa_only:
+        description: Build an unsigned QA app without creating or updating a release
+        type: boolean
+        default: false
   push:
     branches:
       - release
@@ -9,7 +14,67 @@ on:
 # This workflow will trigger on each push to the `release` branch to create or update a GitHub release, build your app, and upload the artifacts to the release.
 
 jobs:
+  build-qa:
+    if: github.event_name == 'workflow_dispatch' && inputs.qa_only
+    permissions:
+      contents: read
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@1.85.1
+        with:
+          targets: aarch64-apple-darwin
+      - name: Install frontend and pinned HWI dependencies
+        run: npm ci
+      - name: Prepare separate QA identity
+        run: |
+          python3 - <<'PYQA'
+          import json
+          from pathlib import Path
+          config = json.loads(Path("src-tauri/tauri.release.conf.json").read_text())
+          config["package"].update(productName="Keeper Desktop R3 QA", version="0.2.6-qa.1")
+          config["tauri"]["bundle"]["identifier"] = "com.keeper.desktop.r3qa"
+          config["tauri"]["bundle"]["macOS"]["signingIdentity"] = "-"
+          Path("src-tauri/tauri.qa.conf.json").write_text(json.dumps(config))
+          package = json.loads(Path("package.json").read_text())
+          package["version"] = "0.2.6-qa.1"
+          Path("package.json").write_text(json.dumps(package))
+          PYQA
+      - name: Build QA application only
+        run: npm run tauri build -- --target aarch64-apple-darwin --bundles app --config src-tauri/tauri.qa.conf.json
+      - name: Verify QA metadata and endpoint
+        run: |
+          python3 - <<'PYQA'
+          import json, plistlib, hashlib
+          from pathlib import Path
+          app = next(Path("src-tauri/target/aarch64-apple-darwin/release/bundle/macos").glob("*.app"))
+          info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
+          executable = app / "Contents/MacOS" / info["CFBundleExecutable"]
+          binary = executable.read_bytes()
+          assert info["CFBundleIdentifier"] == "com.keeper.desktop.r3qa"
+          assert info["CFBundleShortVersionString"] == "0.2.6-qa.1"
+          assert b"https://channel.bitcoinkeeper.app/" in binary
+          assert b"https://keeper-channel.herokuapp.com/" not in binary
+          Path("desktop-qa-evidence.json").write_text(json.dumps({
+            "version": info["CFBundleShortVersionString"], "identifier": info["CFBundleIdentifier"],
+            "executable_sha256": hashlib.sha256(binary).hexdigest(), "live_endpoint": True,
+            "source": "${{ github.sha }}", "signing": "ad hoc QA; not production notarized"
+          }, indent=2))
+          PYQA
+          ditto -c -k --sequesterRsrc --keepParent "src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Keeper Desktop R3 QA.app" keeper-desktop-r3-qa.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keeper-desktop-r3-qa-${{ github.sha }}
+          path: |
+            keeper-desktop-r3-qa.zip
+            desktop-qa-evidence.json
+          retention-days: 14
+
   publish-tauri:
+    if: github.event_name != 'workflow_dispatch' || !inputs.qa_only
     permissions:
       contents: write
       actions: read

@@ -16,29 +16,11 @@ import {
   NetworkType,
 } from "../../helpers/devices";
 import ModalsManager from "../../modals/ModalManager";
+import ErrorModal from "../../modals/ErrorModal/ErrorModal";
 import SubscriptionsModal from "../../modals/SubscriptionsModal/SubscriptionsModal";
 import hwiService from "../../services/hwiService";
 import { version } from "../../../package.json";
-
-interface ChannelMessagePayload {
-  data: {
-    signerType: string;
-    action: string;
-    accountNumber?: number;
-    psbt?: { serializedPSBT: string };
-    descriptorString?: string;
-    miniscriptPolicy?: string;
-    addressIndex?: number;
-    walletName?: string;
-    hmac?: string;
-    firstExtAdd?: string;
-    receivingAddress?: string;
-    // Subscription data
-    appId?: string;
-    roomId?: string;
-  };
-  network: string;
-}
+import { validateChannelMessage } from "./validateChannelMessage";
 
 const ConnectScreen = () => {
   const { openModal, openModalHandler, closeModalHandler } = useModalState();
@@ -56,6 +38,7 @@ const ConnectScreen = () => {
   const [hmac, setHmac] = useState<string | null>(null);
   const [expectedAddress, setExpectedAddress] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [packetError, setPacketError] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
 
   // Subscriptions state variables
@@ -109,38 +92,46 @@ const ConnectScreen = () => {
   useEffect(() => {
     const unsubscribe = listen(
       "channel-message",
-      async (channelMessage: { payload: ChannelMessagePayload }) => {
+      (channelMessage: { payload: unknown }) => {
+        const request = validateChannelMessage(channelMessage.payload);
+        if (!request.ok) {
+          openModalHandler(null);
+          setPacketError(request.error);
+          return;
+        }
+
+        setPacketError(null);
+        if (request.kind === "purchase") {
+          setSubscriptionsData({
+            appId: request.appId,
+            roomId: request.roomId,
+          });
+          openSubscriptionsModal();
+          return;
+        }
+
         setAccountNumber(null);
+        setAddressIndex(null);
         setDescriptor(null);
         setExpectedAddress(null);
         setHmac(null);
         setMiniscriptPolicy(null);
         setPsbt(null);
         setWalletName(null);
-        const { data, network } = channelMessage.payload;
+        const { data, network, deviceType } = request;
         switch (data.action) {
           case "ADD_DEVICE":
-            if (data.accountNumber) {
-              setAccountNumber(data.accountNumber);
-            } else {
-              setAccountNumber(0);
-            }
+            setAccountNumber(data.accountNumber ?? 0);
             setActionType("shareXpubs");
             break;
           case "HEALTH_CHECK":
-            if (data.accountNumber) {
-              setAccountNumber(data.accountNumber);
-            } else {
-              setAccountNumber(0);
-            }
+            setAccountNumber(data.accountNumber ?? 0);
             setActionType("healthCheck");
             break;
           case "SIGN_TX":
             setActionType("signTx");
             if (data.psbt) {
               setPsbt(data.psbt.serializedPSBT);
-            } else {
-              handleError("PSBT was not provided");
             }
             if (data.miniscriptPolicy) {
               setMiniscriptPolicy(data.miniscriptPolicy);
@@ -165,15 +156,9 @@ const ConnectScreen = () => {
               } else {
                 setWalletName("Vault");
               }
-            } else {
-              handleError(
-                "No descriptor or Miniscript policy was not provided",
-              );
             }
             if (data.firstExtAdd) {
               setExpectedAddress(data.firstExtAdd);
-            } else {
-              handleError("Expected address was not provided");
             }
             break;
           case "VERIFY_ADDRESS":
@@ -191,30 +176,17 @@ const ConnectScreen = () => {
               } else {
                 setWalletName("Vault");
               }
-            } else {
-              handleError("Descriptor or Miniscript policy is required");
             }
             if (data.hmac) {
               setHmac(data.hmac);
             }
             if (data.receivingAddress) {
               setExpectedAddress(data.receivingAddress);
-            } else {
-              handleError("Expected address was not provided");
             }
             break;
-          case "PURCHASE_SUBS":
-            setSubscriptionsData({
-              appId: data.appId,
-              roomId: data.roomId,
-            });
-            openSubscriptionsModal();
-            return;
-          default:
-            handleError("Unsupported action received");
         }
-        setDeviceType(data.signerType.toLowerCase() as HWIDeviceType);
-        setNetwork(network as NetworkType);
+        setDeviceType(deviceType);
+        setNetwork(network);
         setCurrentAction("connect");
         openModalHandler("deviceAction");
       },
@@ -223,7 +195,7 @@ const ConnectScreen = () => {
     return () => {
       unsubscribe.then((f) => f());
     };
-  }, [openModalHandler, handleError]);
+  }, [openModalHandler]);
 
   useEffect(() => {
     const unsubscribe = listen(
@@ -331,6 +303,12 @@ const ConnectScreen = () => {
           pairingCode={pairingCode}
         />
       )}
+      <ErrorModal
+        isOpen={packetError !== null}
+        onClose={() => setPacketError(null)}
+        errorMessage={packetError ?? ""}
+        onRetry={() => setPacketError(null)}
+      />
       <div className={styles.versionTag}>Version {version}</div>
       <SubscriptionsModal
         isOpen={isSubscriptionsModalOpen}
