@@ -13,6 +13,7 @@ const screenTool = join(temp, 'desktop-qa-screen');
 const screenshot = join(temp, 'desktop-private-screen.png');
 const report = {
   source: 'ef050663d33be51f25fb10310d5a0549b111e273', artifact_id: 11615331902,
+  tooling_source: process.env.GITHUB_SHA, cloud_run_id: process.env.GITHUB_RUN_ID, runner_architecture: process.arch,
   workflow_run_id: 37928395053, state: 'INCOMPLETE', tests: {},
   limits: 'Desktop-only disposable cloud smoke; phone pairing, QR camera scanning, reconnect/retry/rotation matrix, physical signer and PSBT round trip NOT RUN. No Continue click, wallet data, signing or broadcast.',
 };
