@@ -1,64 +1,62 @@
-name: PGP sign release
+name: PGP release handoff preflight
 
+# Automatic workflow_run signing is intentionally removed. In particular,
+# successful QA builds must never select or mutate an unrelated draft release.
 on:
-  workflow_run:
-    workflows: ["release", "dev-release"]
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      approved_manifest_json:
+        description: Exact reviewed JSON (release_id, tag, source_sha, build_run_id, complete assets with IDs/names/sizes/SHA-256)
+        required: true
+        type: string
+      approved_manifest_sha256:
+        description: SHA-256 of those exact UTF-8 JSON bytes (no added newline)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: desktop-pgp-handoff-preflight
+  cancel-in-progress: false
 
 jobs:
-  sign-release:
+  preflight:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install GPG
-        run: sudo apt-get install -y gnupg
-
-      - name: Import GPG key
+      - name: Checkout workflow implementation only
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Validate handoff guard contracts
+        run: python3 -m unittest discover -s .github/scripts -p 'test_desktop_pgp_handoff.py'
+      - name: Read exact approved release and build metadata
         env:
-          PGP_PRIVATE_KEY: ${{ secrets.PGP_PRIVATE_KEY }}
-          PGP_PASSWORD: ${{ secrets.PGP_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
+          APPROVED_MANIFEST: ${{ inputs.approved_manifest_json }}
         run: |
-          echo "$PGP_PRIVATE_KEY" | gpg --batch --yes --import
-          echo "$PGP_PASSWORD" | gpg --batch --yes --passphrase-fd 0 --pinentry-mode loopback --change-passphrase $(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5 }')
-
-      - name: Create and Sign SHA256SUMS
+          set -euo pipefail
+          umask 077
+          printf '%s' "$APPROVED_MANIFEST" > "$RUNNER_TEMP/desktop-approved-manifest.json"
+          release_id=$(jq -er '.release_id | select(type == "number" and . > 0 and . == floor)' "$RUNNER_TEMP/desktop-approved-manifest.json")
+          build_run_id=$(jq -er '.build_run_id | select(type == "number" and . > 0 and . == floor)' "$RUNNER_TEMP/desktop-approved-manifest.json")
+          gh api "repos/KeeperCommunity/keeper-desktop/releases/$release_id" > "$RUNNER_TEMP/desktop-release.json"
+          gh api "repos/KeeperCommunity/keeper-desktop/actions/runs/$build_run_id" > "$RUNNER_TEMP/desktop-build-run.json"
+          gh api "repos/KeeperCommunity/keeper-desktop/actions/runs/$build_run_id/jobs?per_page=100" > "$RUNNER_TEMP/desktop-build-jobs.json"
+      - name: Validate explicit production handoff
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PGP_PASSWORD: ${{ secrets.PGP_PASSWORD }}
+          APPROVED_MANIFEST_SHA256: ${{ inputs.approved_manifest_sha256 }}
         run: |
-          version=$(grep '^version =' src-tauri/Cargo.toml | cut -d '"' -f2)
-          echo "Version: $version"
+          python3 .github/scripts/validate_desktop_pgp_handoff.py \
+            --manifest "$RUNNER_TEMP/desktop-approved-manifest.json" \
+            --manifest-sha256 "$APPROVED_MANIFEST_SHA256" \
+            --release "$RUNNER_TEMP/desktop-release.json" \
+            --run "$RUNNER_TEMP/desktop-build-run.json" \
+            --jobs "$RUNNER_TEMP/desktop-build-jobs.json" \
+            --output "$RUNNER_TEMP/desktop-pgp-handoff-plan.json"
+          echo 'Read-only preflight passed. Signing, upload and publication remain NOT RUN.' >> "$GITHUB_STEP_SUMMARY"
+      # No signing secrets, private-key import, release upload or publication here.
 
-          releases=$(gh release list --limit 20 --json tagName,name,isDraft,isPrerelease)
-          releaseInfo=$(echo "$releases" | jq -r '.[] | select(.isDraft == true and (.tagName | contains("'"$version"'"))) | .tagName' | head -n1)
-
-          if [ -z "$releaseInfo" ]; then
-            echo "Error: Could not find a draft release for version $version"
-            exit 1
-          fi
-
-          tagName="$releaseInfo"
-          echo "Found draft release: $tagName"
-
-          # Create a temporary directory for downloaded assets
-          mkdir -p tmp_assets
-          cd tmp_assets
-
-          # Download all assets
-          gh release download "$tagName" --pattern "*"
-
-          # Create SHA256SUMS.txt
-          sha256sum * > SHA256SUMS.txt
-
-          # Sign SHA256SUMS.txt
-          gpg --batch --yes --passphrase "$PGP_PASSWORD" --pinentry-mode loopback --detach-sig --armor SHA256SUMS.txt
-
-          # Upload SHA256SUMS.txt and SHA256SUMS.txt.asc
-          gh release upload "$tagName" SHA256SUMS.txt SHA256SUMS.txt.asc --clobber
-
-          cd ..
-          rm -rf tmp_assets
