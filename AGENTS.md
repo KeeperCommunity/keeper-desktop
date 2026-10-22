@@ -1,0 +1,5 @@
+# Pull request review
+
+Follow [.github/REVIEW_POLICY.md](.github/REVIEW_POLICY.md) when preparing or updating a pull request. Use [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) to choose Skip provider review / Lite / Balanced from actual severity, uncertainty, scope and cost. Cloud review replaces mandatory human developer approval when warranted; human review is optional. Independent coverage is needed only when actual risk/findings require it and installed scope/budget permit. Record the decision, real checks, reviewed SHA/coverage and findings/dispositions; batch material fixes and avoid unnecessary provider requests. Keep draft/every-push review off, report automation mismatches and retain all required checks.
+
+Preserve current repository conventions. Before delivery, run feasible checks proportional to the change: documentation edits need formatting, links, and scoped diff checks; runtime changes need relevant checks. Human live verification takes place after agent delivery. Merge still requires the existing required checks; requested human feedback and its disposition must be recorded without making approval a merge gate.
