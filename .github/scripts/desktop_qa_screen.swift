@@ -12,8 +12,11 @@ if CommandLine.arguments.count == 4 && CommandLine.arguments[1] == "click" {
           let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { fatalError("Expected screenshot") }
     let text = VNRecognizeTextRequest()
     text.recognitionLevel = .accurate
+    // GitHub macOS VMs lack the physical scaler/Metal compute device.
+    text.usesCPUOnly = true
     let barcodes = VNDetectBarcodesRequest()
     barcodes.symbologies = [.qr]
+    barcodes.usesCPUOnly = true
     try VNImageRequestHandler(cgImage: cg).perform([text, barcodes])
     let words: [[String: Any]] = (text.results ?? []).compactMap { observation in
         guard let candidate = observation.topCandidates(1).first else { return nil }

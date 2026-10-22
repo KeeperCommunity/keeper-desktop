@@ -23,8 +23,14 @@ let launchError = false;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const record = (name, ok) => { report.tests[name] = ok ? 'PASS' : 'FAIL'; if (!ok) throw new Error(name); };
 function inspect() {
+  report.tool_stage = 'capture_screenshot';
   execFileSync('/usr/sbin/screencapture', ['-x', '-t', 'png', screenshot], { stdio: 'ignore' });
-  return JSON.parse(execFileSync(screenTool, [screenshot], { encoding: 'utf8' }));
+  report.tool_stage = 'vision_ocr_and_barcode';
+  const raw = execFileSync(screenTool, [screenshot], { encoding: 'utf8' });
+  report.tool_stage = 'parse_screen_reader_json';
+  const view = JSON.parse(raw);
+  report.tool_stage = 'screen_reader_ready';
+  return view;
 }
 function includes(view, value) { return view.text.some(item => item.text.toLowerCase().includes(value.toLowerCase())); }
 async function until(check, label, seconds = 35) {
