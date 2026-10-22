@@ -1,0 +1,83 @@
+name: Desktop disposable cloud acceptance
+
+# Deliberately distinct from release/dev-release: never activates PGP workflow_run.
+on:
+  push:
+    branches: [codex/r4-desktop-cloud-smoke-20261022]
+    paths:
+      - .github/workflows/desktop-qa-cloud-smoke.yml
+      - .github/scripts/desktop_qa_*
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  existing-qa-smoke:
+    runs-on: macos-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Fetch immutable existing QA artifact and verify source identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/desktop-qa" "$RUNNER_TEMP/desktop-evidence"
+          gh api repos/KeeperCommunity/keeper-desktop/actions/artifacts/11615331902 > "$RUNNER_TEMP/desktop-qa/artifact.json"
+          python3 - "$RUNNER_TEMP/desktop-qa/artifact.json" <<'PY'
+          import json,sys
+          a=json.load(open(sys.argv[1]))
+          assert a['id']==11615331902 and not a['expired']
+          assert a['workflow_run']['id']==37928395053
+          assert a['workflow_run']['head_sha']=='ef050663d33be51f25fb10310d5a0549b111e273'
+          PY
+          gh api repos/KeeperCommunity/keeper-desktop/actions/artifacts/11615331902/zip > "$RUNNER_TEMP/desktop-qa/original.zip"
+          echo "2a3ca33dd9a539323f41639d98fb36ab8d2cdc670f1b17b20f861b3528eaeea5  $RUNNER_TEMP/desktop-qa/original.zip" | shasum -a 256 -c -
+          ditto -x -k "$RUNNER_TEMP/desktop-qa/original.zip" "$RUNNER_TEMP/desktop-qa"
+          echo "9ae0c39eefafd85a9234bf7a599f75e3b13a481ab0ad7f9418eee66990c34a69  $RUNNER_TEMP/desktop-qa/keeper-desktop-r3-qa.zip" | shasum -a 256 -c -
+          ditto -x -k "$RUNNER_TEMP/desktop-qa/keeper-desktop-r3-qa.zip" "$RUNNER_TEMP/desktop-qa"
+          python3 - "$RUNNER_TEMP/desktop-qa" "$RUNNER_TEMP/desktop-evidence" <<'PY'
+          import hashlib,json,plistlib,sys
+          from pathlib import Path
+          base=Path(sys.argv[1]); app=base/'Keeper Desktop R3 QA.app'
+          info=plistlib.loads((app/'Contents/Info.plist').read_bytes())
+          binary=(app/'Contents/MacOS'/info['CFBundleExecutable']).read_bytes()
+          assert info['CFBundleIdentifier']=='com.keeper.desktop.r3qa'
+          assert info['CFBundleShortVersionString']=='0.2.6-qa.1'
+          assert hashlib.sha256(binary).hexdigest()=='13e252b7a7f339d24e327d8d14d7956946f21b929c037970edffa9e6e90fcb70'
+          assert b'https://channel.bitcoinkeeper.app/' in binary
+          assert b'https://keeper-channel.herokuapp.com/' not in binary
+          evidence=json.loads((base/'desktop-qa-evidence.json').read_text())
+          assert evidence['source']=='ef050663d33be51f25fb10310d5a0549b111e273'
+          (Path(sys.argv[2])/'original-artifact-evidence.json').write_text(json.dumps(evidence,indent=2)+'\n')
+          PY
+          codesign --verify --deep --strict "$RUNNER_TEMP/desktop-qa/Keeper Desktop R3 QA.app"
+          uname -m > "$RUNNER_TEMP/desktop-evidence/runner-architecture.txt"
+          echo 'Artifact bytes, separate QA identity, live endpoint and strict deep code signature PASS.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Prepare disposable native screen reader and sender
+        run: |
+          set -euo pipefail
+          swiftc .github/scripts/desktop_qa_screen.swift -o "$RUNNER_TEMP/desktop-qa-screen"
+          mkdir -p "$RUNNER_TEMP/desktop-client"
+          npm install --prefix "$RUNNER_TEMP/desktop-client" --ignore-scripts --no-audit --no-fund socket.io-client@4.8.1
+      - name: Launch exact QA app and exercise disposable channel packets
+        env:
+          APP_BINARY: ${{ runner.temp }}/desktop-qa/Keeper Desktop R3 QA.app/Contents/MacOS/Keeper Desktop R3 QA
+          CLIENT_DIR: ${{ runner.temp }}/desktop-client
+          EVIDENCE_DIR: ${{ runner.temp }}/desktop-evidence
+        run: node .github/scripts/desktop_qa_cloud_smoke.mjs
+      - name: Preserve only sanitized outcomes
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: desktop-disposable-cloud-acceptance-${{ github.sha }}
+          path: ${{ runner.temp }}/desktop-evidence/
+          retention-days: 30
+          if-no-files-found: error
