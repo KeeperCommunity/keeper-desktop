@@ -17,6 +17,8 @@ jobs:
           node-version: "18"
       - name: Install dependencies
         run: npm ci
+      - name: Test Desktop release handoff guard
+        run: python3 -m unittest discover -s .github/scripts -p 'test_desktop_pgp_handoff.py'
       - name: Install libgtk-3-dev
         run: |
           sudo apt-get update
