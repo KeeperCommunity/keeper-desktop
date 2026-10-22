@@ -62,10 +62,23 @@ try {
   const welcome = await until(view => includes(view, 'Get Started'), 'Welcome/channel readiness unavailable');
   record('live_channel_welcome_ready', true);
   report.native_event_permissions = JSON.parse(execFileSync(screenTool, ['permissions'], { encoding: 'utf8' }));
-  const button = welcome.text.find(item => item.text.toLowerCase().includes('get started'));
-  // Match screenshot pixel coordinates to the current display logical dimensions.
+  report.native_activation = JSON.parse(execFileSync(screenTool, ['activate', String(app.pid)], { encoding: 'utf8' }));
+  await pause(500);
+  // Compile/query display geometry before taking fresh, settled button bounds.
   const display = execFileSync('/usr/bin/swift', ['-e', 'import AppKit; let f=NSScreen.main!.frame; print("\(f.width) \(f.height)")'], {encoding: 'utf8'}).trim().split(' ').map(Number);
-  execFileSync(screenTool, ['click', String(button.x * display[0] / welcome.width), String(button.y * display[1] / welcome.height)], { stdio: 'ignore' });
+  function clickGetStarted(view) {
+    const button = view.text.find(item => item.text.toLowerCase().includes('get started'));
+    execFileSync(screenTool, ['click', String(button.x * display[0] / view.width), String(button.y * display[1] / view.height)], { stdio: 'ignore' });
+  }
+  const settled = await until(view => includes(view, 'Get Started'), 'Welcome/channel readiness unavailable', 10);
+  clickGetStarted(settled);
+  await pause(2000);
+  const afterClick = inspect();
+  // One bounded first-mouse retry, only while the original welcome remains visible.
+  if (includes(afterClick, 'Get Started')) {
+    report.scoped_get_started_retry = true;
+    clickGetStarted(afterClick);
+  }
   const paired = await until(view => view.qr.some(value => /^[0-9a-f]{64}$/.test(value)), 'QR readiness/click unavailable');
   const key = paired.qr.find(value => /^[0-9a-f]{64}$/.test(value));
   const { createHash } = await import('node:crypto');
