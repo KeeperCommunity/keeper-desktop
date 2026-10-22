@@ -17,8 +17,8 @@ If a material security PR was automatically reviewed at Lite, select Balanced an
 
 Record the actual effort reported by Copilot, the reviewed commit SHA, the review link, and how feedback was addressed. A review of an older commit is evidence only for that commit; explain material changes since that review and request another review when needed. If quota or availability prevents a review, record that status explicitly. Quota unavailability is not a completed review, and a missing effort/head must remain unverified.
 
-## Human approval and merge
+## Optional human review and merge
 
-Merge requires all required checks and one independent human approval from **Ben (`ben-kaufman`)**, **Utkarsh (`cakesoft-utkarsh`)**, or **Parsh (`Parsh`)**. The approver must be someone other than the PR author. CODEOWNERS requests the named reviewers; approval from all three is not required. Copilot feedback does not count as human approval.
+Human developer review is optional. **Ben (`ben-kaufman`)**, **Utkarsh (`cakesoft-utkarsh`)**, and **Parsh (`Parsh`)** are suggested reviewers when useful and already eligible. Pending invitations or the absence of human review do not block readiness or merge and do not require an access grant. CODEOWNERS contains suggestions only; no human approval is required.
 
-Confirm the review evidence and required checks apply to the current changes before merging. Repository branch protection remains the merge enforcement mechanism.
+All required checks and resolution of relevant review concerns remain required. Record any requested human review, findings and their disposition accurately, and confirm review evidence applies to the current changes. Product signoff, required security and native validation, and operation-specific signing, deployment and release authorization remain separate. Repository branch protection remains the merge enforcement mechanism.

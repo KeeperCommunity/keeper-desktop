@@ -1,2 +1,2 @@
-# Request Ben, Utkarsh, and Parsh for Desktop changes; one approval is required.
-* @ben-kaufman @cakesoft-utkarsh @Parsh
+# Human developer reviews are optional; no automatic code-owner assignment is required.
+# Suggested reviewers when useful and already eligible: @ben-kaufman @cakesoft-utkarsh @Parsh

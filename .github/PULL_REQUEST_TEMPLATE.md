@@ -19,4 +19,5 @@ Follow `.github/REVIEW_POLICY.md`. Complete the selected effort fields before th
 - Review outcome, link, and real comments addressed (or pending / unavailable):
 - Material changes since the reviewed commit / re-review needed:
 - Unavailable review or quota status (if applicable):
-- Independent human approver (Ben / Utkarsh / Parsh) and required checks:
+- Optional human review, if requested (reviewer, link, actual status and findings):
+- Required checks and remaining gates:
