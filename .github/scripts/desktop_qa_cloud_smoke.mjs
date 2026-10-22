@@ -83,7 +83,14 @@ try {
 } catch (error) {
   // Only fixed labels are emitted; screen contents, QR keys and rooms stay private.
   report.state = 'BLOCKED_OR_FAILED';
-  report.failure = String(error.message).slice(0, 200);
+  const label = String(error.message);
+  const fixedLabels = new Set([
+    ...Object.keys(report.tests),
+    'Welcome/channel readiness unavailable', 'QR readiness/click unavailable',
+    'Disposable channel sender unavailable', 'Authenticated malformed-action error unavailable',
+    'Valid encrypted request did not open Connect Ledger',
+  ]);
+  report.failure = fixedLabels.has(label) ? label : 'Cloud runner/tool failure; no private UI data preserved';
   process.exitCode = 1;
 } finally {
   socket?.disconnect();
