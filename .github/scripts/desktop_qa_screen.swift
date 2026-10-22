@@ -1,12 +1,16 @@
 import AppKit
 import Vision
 import CoreGraphics
+import ApplicationServices
 
 if CommandLine.arguments.count == 4 && CommandLine.arguments[1] == "click" {
     guard let x = Double(CommandLine.arguments[2]), let y = Double(CommandLine.arguments[3]) else { fatalError("Invalid click") }
     let point = CGPoint(x: x, y: y)
     CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: point, mouseButton: .left)?.post(tap: .cghidEventTap)
     CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: point, mouseButton: .left)?.post(tap: .cghidEventTap)
+} else if CommandLine.arguments.count == 2 && CommandLine.arguments[1] == "permissions" {
+    let value = ["accessibility_trusted": AXIsProcessTrusted(), "post_events_authorized": CGPreflightPostEventAccess(), "screen_capture_authorized": CGPreflightScreenCaptureAccess()]
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject: value))
 } else {
     guard CommandLine.arguments.count == 2, let image = NSImage(contentsOfFile: CommandLine.arguments[1]),
           let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { fatalError("Expected screenshot") }

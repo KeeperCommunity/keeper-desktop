@@ -30,6 +30,11 @@ function inspect() {
   report.tool_stage = 'parse_screen_reader_json';
   const view = JSON.parse(raw);
   report.tool_stage = 'screen_reader_ready';
+  report.last_screen_flags = {
+    get_started: includes(view, 'Get Started'), scan_me: includes(view, 'Scan Me'),
+    connect_ledger: includes(view, 'Connect Ledger'), server_error: includes(view, 'Server Error'),
+    qr_payload_count: view.qr.length, qr_64hex_detected: view.qr.some(value => /^[0-9a-f]{64}$/.test(value)),
+  };
   return view;
 }
 function includes(view, value) { return view.text.some(item => item.text.toLowerCase().includes(value.toLowerCase())); }
@@ -56,6 +61,7 @@ try {
   record('native_process_launch', !launchError && Boolean(app.pid) && app.exitCode === null);
   const welcome = await until(view => includes(view, 'Get Started'), 'Welcome/channel readiness unavailable');
   record('live_channel_welcome_ready', true);
+  report.native_event_permissions = JSON.parse(execFileSync(screenTool, ['permissions'], { encoding: 'utf8' }));
   const button = welcome.text.find(item => item.text.toLowerCase().includes('get started'));
   // Match screenshot pixel coordinates to the current display logical dimensions.
   const display = execFileSync('/usr/bin/swift', ['-e', 'import AppKit; let f=NSScreen.main!.frame; print("\(f.width) \(f.height)")'], {encoding: 'utf8'}).trim().split(' ').map(Number);
